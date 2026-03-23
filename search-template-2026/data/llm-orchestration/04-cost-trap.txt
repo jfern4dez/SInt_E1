@@ -1,0 +1,30 @@
+# ==================================================
+# 04 - Cost Trap
+# BFS vs UCS (optimality with costs)
+# ==================================================
+
+[PARAMS]
+GEN_LAT=120
+SWITCH_LAT=60
+EUR_PER_SEC=0.01
+PROVIDER=VectorDB_PRO;LAT=30;COST=1.80
+PROVIDER=VectorDB_ECO;LAT=55;COST=0.60
+
+[MAP]
+ROWS=10
+COLS=10
+S . . . . . . . . .
+# # # # # # # # # .
+. . . . . . . . # .
+. # # # # # # . # .
+. # . . . . # . # .
+. # . # # . # . # .
+. # . # . . . . # .
+. # . # # # # # # .
+. . . . . . . . . .
+. # # # # # # # # G
+
+[RAG_LINKS]
+VectorDB_PRO;1,1;10,10
+VectorDB_ECO;1,3;7,3
+VectorDB_ECO;7,3;9,9

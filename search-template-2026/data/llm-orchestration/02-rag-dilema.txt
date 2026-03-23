@@ -1,0 +1,32 @@
+# ==================================================
+# 02 - RAG Dilemma
+# UCS vs A* (cost vs heuristic)
+# ==================================================
+
+[PARAMS]
+GEN_LAT=120
+SWITCH_LAT=60
+EUR_PER_SEC=0.01
+PROVIDER=VectorDB_PRO;LAT=30;COST=1.50
+PROVIDER=VectorDB_ECO;LAT=55;COST=0.75
+
+[MAP]
+ROWS=12
+COLS=12
+S . . . # # # # # # # #
+# # # . # . . . . . . #
+# . . . # . # # # # . #
+# . # # # . # . . # . #
+# . # . . . # . . # . #
+# . # . # # # . # # . #
+# . # . . . . . . . . #
+# . # # # # # # # # . #
+# . . . . . . . . . . #
+# # # # # # # # # # . #
+# . . . . . . . . . . G
+# # # # # # # # # # # #
+
+[RAG_LINKS]
+VectorDB_PRO;1,1;11,10
+VectorDB_ECO;1,2;9,4
+VectorDB_ECO;3,3;6,10

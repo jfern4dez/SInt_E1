@@ -1,0 +1,32 @@
+# ==================================================
+# 06 - Shallow Illusion
+# DFS vs IDS/BFS  (the deep trap)
+# ==================================================
+
+[PARAMS]
+GEN_LAT=120
+SWITCH_LAT=60
+EUR_PER_SEC=0.01
+PROVIDER=VectorDB_PRO;LAT=30;COST=2.00
+
+[MAP]
+ROWS=15
+COLS=5
+# # # # #
+# G # . #
+# . # . #
+# S . . #
+# # # . #
+# . . . #
+# . # # #
+# . . . #
+# # # . #
+# . . . #
+# . # # #
+# . . . #
+# # # . #
+# . . . #
+# . . . #
+
+[RAG_LINKS]
+VectorDB_PRO;4,14;2,2

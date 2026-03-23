@@ -1,0 +1,34 @@
+# ==================================================
+# 01 - Loop Trap
+# Tree-Search vs Graph-Search.
+# ==================================================
+
+[PARAMS]
+GEN_LAT=120
+SWITCH_LAT=60
+EUR_PER_SEC=0.01
+PROVIDER=VectorDB_PRO;LAT=30;COST=1.40
+PROVIDER=VectorDB_ECO;LAT=55;COST=0.70
+
+[MAP]
+ROWS=9
+COLS=9
+. . . . . . . . .
+. . . . . . . . .
+. . . . . . . . .
+. . . S . . . . .
+. . . . . . . . .
+. . . . . . . . .
+. . . . . . . . .
+. . . . . . . . G
+. . . . . . . . .
+
+[RAG_LINKS]
+VectorDB_ECO;4,4;4,5
+VectorDB_ECO;4,5;4,4
+VectorDB_ECO;4,4;5,4
+VectorDB_ECO;5,4;4,4
+VectorDB_PRO;4,4;5,5
+VectorDB_PRO;5,5;4,4
+VectorDB_PRO;5,5;4,5
+VectorDB_PRO;4,5;5,5

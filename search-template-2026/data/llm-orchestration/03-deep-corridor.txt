@@ -1,0 +1,31 @@
+# ==================================================
+# 03 - Deep Corridor
+# DFS vs BFS/UCS (depth vs completeness)
+# ==================================================
+
+[PARAMS]
+GEN_LAT=120
+SWITCH_LAT=60
+EUR_PER_SEC=0.01
+PROVIDER=VectorDB_PRO;LAT=30;COST=1.45
+PROVIDER=VectorDB_ECO;LAT=55;COST=0.70
+
+[MAP]
+ROWS=12
+COLS=12
+S . # # # # # # # # # #
+. . . . . . . . . . . #
+# # # # # # # # # # . #
+# . . . . . . . . # . #
+# . # # # # # # . # . #
+# . # . . . # . . # . #
+# . # . # . # . # # . #
+# . . . # . . . . . . #
+# # # . # # # # # # # #
+# . . . . . . . . . . #
+# # # # # # # # # # . G
+# # # # # # # # # # # #
+
+[RAG_LINKS]
+VectorDB_ECO;2,2;10,2
+VectorDB_PRO;10,2;2,11
