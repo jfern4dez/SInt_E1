@@ -350,14 +350,66 @@ to.string <- function(state, problem) {
 #     - Venía de ECO  → LAT_ECO                (ticket ya abierto, gratis)
 #     - Venía de GEN o PRO → SWITCH_LAT + LAT_ECO + COST_ECO×ms_per_euro
 # =========================================================================
+# get.cost <- function(action, state, problem) {
+#   
+#   modo_anterior <- state[3]   # 0=GEN, 1=PRO, 2=ECO
+#   
+#   # Factor de conversión: 1 euro = cuántos ms equivalentes
+#   ms_per_euro <- 1000 / problem$eur_per_sec
+#   
+#   # Helper: obtener proveedor por nombre
+#   get_provider <- function(nombre) {
+#     for (p in problem$providers) {
+#       if (p$name == nombre) return(p)
+#     }
+#     stop(paste("Proveedor no encontrado:", nombre))
+#   }
+#   
+#   # --- Acciones GEN ---
+#   if (action %in% c("UP", "DOWN", "LEFT", "RIGHT",
+#                     "UP_RIGHT", "DOWN_RIGHT", "DOWN_LEFT", "UP_LEFT")) {
+#     if (modo_anterior == 0L) {
+#       # Continuamos en GEN → sin penalización
+#       return(problem$gen_lat)
+#     } else {
+#       # Veníamos de un proveedor RAG → penalización por cierre de ticket
+#       return(problem$switch_lat + problem$gen_lat)
+#     }
+#   }
+#   
+#   # --- Acción JUMP_PRO ---
+#   if (action == "JUMP_PRO") {
+#     pro <- get_provider("VectorDB_PRO")
+#     if (modo_anterior == 1L) {
+#       # Ticket PRO ya activo → solo latencia del salto
+#       return(pro$lat)
+#     } else {
+#       # Abrimos ticket PRO → switch + latencia + coste del ticket
+#       return(problem$switch_lat + pro$lat + pro$cost * ms_per_euro)
+#     }
+#   }
+#   
+#   # --- Acción JUMP_ECO ---
+#   if (action == "JUMP_ECO") {
+#     eco <- get_provider("VectorDB_ECO")
+#     if (modo_anterior == 2L) {
+#       # Ticket ECO ya activo → solo latencia del salto
+#       return(eco$lat)
+#     } else {
+#       # Abrimos ticket ECO → switch + latencia + coste del ticket
+#       return(problem$switch_lat + eco$lat + eco$cost * ms_per_euro)
+#     }
+#   }
+#   
+#   stop(paste("Acción desconocida en get.cost():", action))
+# }
+
 get.cost <- function(action, state, problem) {
   
   modo_anterior <- state[3]   # 0=GEN, 1=PRO, 2=ECO
   
-  # Factor de conversión: 1 euro = cuántos ms equivalentes
   ms_per_euro <- 1000 / problem$eur_per_sec
   
-  # Helper: obtener proveedor por nombre
   get_provider <- function(nombre) {
     for (p in problem$providers) {
       if (p$name == nombre) return(p)
@@ -369,10 +421,9 @@ get.cost <- function(action, state, problem) {
   if (action %in% c("UP", "DOWN", "LEFT", "RIGHT",
                     "UP_RIGHT", "DOWN_RIGHT", "DOWN_LEFT", "UP_LEFT")) {
     if (modo_anterior == 0L) {
-      # Continuamos en GEN → sin penalización
       return(problem$gen_lat)
     } else {
-      # Veníamos de un proveedor RAG → penalización por cierre de ticket
+      # Veníamos de RAG → penalización por cierre de ticket
       return(problem$switch_lat + problem$gen_lat)
     }
   }
@@ -381,7 +432,7 @@ get.cost <- function(action, state, problem) {
   if (action == "JUMP_PRO") {
     pro <- get_provider("VectorDB_PRO")
     if (modo_anterior == 1L) {
-      # Ticket PRO ya activo → solo latencia del salto
+      # Ticket PRO ya activo → solo latencia del salto, sin coste económico
       return(pro$lat)
     } else {
       # Abrimos ticket PRO → switch + latencia + coste del ticket
@@ -393,7 +444,7 @@ get.cost <- function(action, state, problem) {
   if (action == "JUMP_ECO") {
     eco <- get_provider("VectorDB_ECO")
     if (modo_anterior == 2L) {
-      # Ticket ECO ya activo → solo latencia del salto
+      # Ticket ECO ya activo → solo latencia del salto, sin coste económico
       return(eco$lat)
     } else {
       # Abrimos ticket ECO → switch + latencia + coste del ticket
@@ -403,6 +454,9 @@ get.cost <- function(action, state, problem) {
   
   stop(paste("Acción desconocida en get.cost():", action))
 }
+
+
+
 
 
 # =========================================================================

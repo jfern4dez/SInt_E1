@@ -46,14 +46,79 @@ source("../problems/LLM.R")
 # Devuelve una lista con: latencia_ms, coste_eur
 # Si el algoritmo no encontró solución devuelve NA en ambos campos.
 # =========================================================================
+
+
+# decompose.solution <- function(result, problem) {
+#   
+#   # Sin solución → devolver NA
+#   if (is.null(result$actions) || length(result$actions) == 0) {
+#     return(list(latencia_ms = NA, coste_eur = NA))
+#   }
+#   
+#   # Helper para buscar proveedor por nombre
+#   get_provider <- function(nombre) {
+#     for (p in problem$providers) {
+#       if (p$name == nombre) return(p)
+#     }
+#     stop(paste("Proveedor no encontrado:", nombre))
+#   }
+#   
+#   latencia_ms <- 0
+#   coste_eur   <- 0
+#   
+#   # Recorremos las acciones desde el estado inicial
+#   state <- problem$state_initial
+#   
+#   for (action in result$actions) {
+#     
+#     modo_anterior <- state[3]   # 0=GEN, 1=PRO, 2=ECO
+#     
+#     # --- GEN: solo latencia de paso + posible switch ---
+#     if (action %in% c("UP", "DOWN", "LEFT", "RIGHT",
+#                       "UP_RIGHT", "DOWN_RIGHT", "DOWN_LEFT", "UP_LEFT")) {
+#       latencia_ms <- latencia_ms + problem$gen_lat
+#       if (modo_anterior != 0L) {
+#         # Venía de RAG: penalización de tiempo por cambio de modo
+#         latencia_ms <- latencia_ms + problem$switch_lat
+#       }
+#     }
+#     
+#     # --- JUMP_PRO ---
+#     else if (action == "JUMP_PRO") {
+#       pro <- get_provider("VectorDB_PRO")
+#       latencia_ms <- latencia_ms + pro$lat
+#       if (modo_anterior != 1L) {
+#         # Primer uso de PRO en este tramo: switch + apertura de ticket
+#         latencia_ms <- latencia_ms + problem$switch_lat
+#         coste_eur   <- coste_eur   + pro$cost
+#       }
+#       # Si ya estábamos en PRO: ticket ya pagado, el salto es gratis en €
+#     }
+#     
+#     # --- JUMP_ECO ---
+#     else if (action == "JUMP_ECO") {
+#       eco <- get_provider("VectorDB_ECO")
+#       latencia_ms <- latencia_ms + eco$lat
+#       if (modo_anterior != 2L) {
+#         latencia_ms <- latencia_ms + problem$switch_lat
+#         coste_eur   <- coste_eur   + eco$cost
+#       }
+#     }
+#     
+#     # Avanzar el estado
+#     state <- effect(state, action, problem)
+#   }
+#   
+#   return(list(latencia_ms = latencia_ms, coste_eur = coste_eur))
+# }
+# 
+
 decompose.solution <- function(result, problem) {
   
-  # Sin solución → devolver NA
   if (is.null(result$actions) || length(result$actions) == 0) {
     return(list(latencia_ms = NA, coste_eur = NA))
   }
   
-  # Helper para buscar proveedor por nombre
   get_provider <- function(nombre) {
     for (p in problem$providers) {
       if (p$name == nombre) return(p)
@@ -64,19 +129,17 @@ decompose.solution <- function(result, problem) {
   latencia_ms <- 0
   coste_eur   <- 0
   
-  # Recorremos las acciones desde el estado inicial
   state <- problem$state_initial
   
   for (action in result$actions) {
     
     modo_anterior <- state[3]   # 0=GEN, 1=PRO, 2=ECO
     
-    # --- GEN: solo latencia de paso + posible switch ---
+    # --- GEN ---
     if (action %in% c("UP", "DOWN", "LEFT", "RIGHT",
                       "UP_RIGHT", "DOWN_RIGHT", "DOWN_LEFT", "UP_LEFT")) {
       latencia_ms <- latencia_ms + problem$gen_lat
       if (modo_anterior != 0L) {
-        # Venía de RAG: penalización de tiempo por cambio de modo
         latencia_ms <- latencia_ms + problem$switch_lat
       }
     }
@@ -84,20 +147,23 @@ decompose.solution <- function(result, problem) {
     # --- JUMP_PRO ---
     else if (action == "JUMP_PRO") {
       pro <- get_provider("VectorDB_PRO")
+      # SIEMPRE se paga la latencia del salto
       latencia_ms <- latencia_ms + pro$lat
       if (modo_anterior != 1L) {
-        # Primer uso de PRO en este tramo: switch + apertura de ticket
+        # Primera apertura del ticket PRO: switch + coste económico
         latencia_ms <- latencia_ms + problem$switch_lat
         coste_eur   <- coste_eur   + pro$cost
       }
-      # Si ya estábamos en PRO: ticket ya pagado, el salto es gratis en €
+      # Si ya estábamos en PRO: solo la latencia (ya sumada arriba), sin coste adicional
     }
     
     # --- JUMP_ECO ---
     else if (action == "JUMP_ECO") {
       eco <- get_provider("VectorDB_ECO")
+      # SIEMPRE se paga la latencia del salto
       latencia_ms <- latencia_ms + eco$lat
       if (modo_anterior != 2L) {
+        # Primera apertura del ticket ECO: switch + coste económico
         latencia_ms <- latencia_ms + problem$switch_lat
         coste_eur   <- coste_eur   + eco$cost
       }
@@ -109,48 +175,47 @@ decompose.solution <- function(result, problem) {
   
   return(list(latencia_ms = latencia_ms, coste_eur = coste_eur))
 }
-
-
-# =========================================================================
-# print.solution.table(results_list, labels, problem)
-# =========================================================================
-# Imprime una tabla legible con las métricas reales de cada algoritmo:
-#   Algoritmo | ¿Solución? | Pasos | Latencia (ms) | Coste (€) | Nodos expandidos
-# =========================================================================
-print.solution.table <- function(results_list, labels, problem) {
-  
-  cat("\n")
-  cat(sprintf("%-22s | %-10s | %-6s | %-14s | %-10s | %-8s\n",
-              "Algoritmo", "Solución", "Pasos", "Latencia (ms)", "Coste (€)", "Nodos"))
-  cat(strrep("-", 85), "\n")
-  
-  for (i in seq_along(results_list)) {
-    res   <- results_list[[i]]
-    label <- labels[[i]]
-    
-    tiene_sol <- !is.null(res$actions) && length(res$actions) > 0
-    pasos     <- if (tiene_sol) length(res$actions) else "-"
-    nodos     <- if (!is.null(res$nodes_expanded)) res$nodes_expanded else "-"
-    
-    if (tiene_sol) {
-      descomp   <- decompose.solution(res, problem)
-      lat_str   <- sprintf("%.1f", descomp$latencia_ms)
-      eur_str   <- sprintf("%.4f", descomp$coste_eur)
-    } else {
-      lat_str <- "-"
-      eur_str <- "-"
-    }
-    
-    cat(sprintf("%-22s | %-10s | %-6s | %-14s | %-10s | %-8s\n",
-                label,
-                if (tiene_sol) "SI" else "NO",
-                pasos,
-                lat_str,
-                eur_str,
-                nodos))
-  }
-  cat("\n")
-}
+# 
+# # =========================================================================
+# # print.solution.table(results_list, labels, problem)
+# # =========================================================================
+# # Imprime una tabla legible con las métricas reales de cada algoritmo:
+# #   Algoritmo | ¿Solución? | Pasos | Latencia (ms) | Coste (€) | Nodos expandidos
+# # =========================================================================
+# print.solution.table <- function(results_list, labels, problem) {
+#   
+#   cat("\n")
+#   cat(sprintf("%-22s | %-10s | %-6s | %-14s | %-10s | %-8s\n",
+#               "Algoritmo", "Solución", "Pasos", "Latencia (ms)", "Coste (€)", "Nodos"))
+#   cat(strrep("-", 85), "\n")
+#   
+#   for (i in seq_along(results_list)) {
+#     res   <- results_list[[i]]
+#     label <- labels[[i]]
+#     
+#     tiene_sol <- !is.null(res$actions) && length(res$actions) > 0
+#     pasos     <- if (tiene_sol) length(res$actions) else "-"
+#     nodos     <- if (!is.null(res$nodes_expanded)) res$nodes_expanded else "-"
+#     
+#     if (tiene_sol) {
+#       descomp   <- decompose.solution(res, problem)
+#       lat_str   <- sprintf("%.1f", descomp$latencia_ms)
+#       eur_str   <- sprintf("%.4f", descomp$coste_eur)
+#     } else {
+#       lat_str <- "-"
+#       eur_str <- "-"
+#     }
+#     
+#     cat(sprintf("%-22s | %-10s | %-6s | %-14s | %-10s | %-8s\n",
+#                 label,
+#                 if (tiene_sol) "SI" else "NO",
+#                 pasos,
+#                 lat_str,
+#                 eur_str,
+#                 nodos))
+#   }
+#   cat("\n")
+# }
 
 
 # =========================================================================
